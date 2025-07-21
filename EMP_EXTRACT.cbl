@@ -1,0 +1,64 @@
+IDENTIFICATION DIVISION.
+       PROGRAM-ID. EMP-EXTRACT.
+       AUTHOR. JULES.
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT EMP-MASTER ASSIGN TO "EMPMAST.DAT"
+               ORGANIZATION IS LINE SEQUENTIAL.
+           SELECT MGR-MASTER ASSIGN TO "MGRMAST.DAT"
+               ORGANIZATION IS LINE SEQUENTIAL.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD  EMP-MASTER.
+       01  EMP-MASTER-REC.
+           05 EMP-ID        PIC X(8).
+           05 EMP-NAME      PIC X(57).
+           05 DEPT-CODE     PIC X(4).
+           05 POS-CODE      PIC X(2).
+           05 HIRE-DATE     PIC 9(8).
+           05 FILLER        PIC X(49).
+
+       FD  MGR-MASTER.
+       01  MGR-MASTER-REC  PIC X(128).
+
+       WORKING-STORAGE SECTION.
+       01  WS-EOF-FLAG         PIC X(1) VALUE 'N'.
+           88 EOF-EMP-MASTER          VALUE 'Y'.
+       01  WS-IN-COUNT         PIC 9(5) VALUE 0.
+       01  WS-OUT-COUNT        PIC 9(5) VALUE 0.
+
+       PROCEDURE DIVISION.
+       MAIN-PROCEDURE.
+           PERFORM INITIALIZE-PROCESS.
+           PERFORM MAIN-PROCESS UNTIL EOF-EMP-MASTER.
+           PERFORM FINALIZE-PROCESS.
+           STOP RUN.
+
+       INITIALIZE-PROCESS.
+           OPEN INPUT EMP-MASTER
+                OUTPUT MGR-MASTER.
+           PERFORM READ-EMP-MASTER.
+
+       MAIN-PROCESS.
+           IF POS-CODE >= "30"
+               WRITE MGR-MASTER-REC FROM EMP-MASTER-REC
+               ADD 1 TO WS-OUT-COUNT
+           END-IF.
+           PERFORM READ-EMP-MASTER.
+
+       READ-EMP-MASTER.
+           READ EMP-MASTER
+               AT END MOVE 'Y' TO WS-EOF-FLAG
+           END-READ.
+           IF NOT EOF-EMP-MASTER
+               ADD 1 TO WS-IN-COUNT
+           END-IF.
+
+       FINALIZE-PROCESS.
+           CLOSE EMP-MASTER
+                 MGR-MASTER.
+           DISPLAY "INPUT COUNT : " WS-IN-COUNT.
+           DISPLAY "OUTPUT COUNT: " WS-OUT-COUNT.
